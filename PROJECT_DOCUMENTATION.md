@@ -379,7 +379,7 @@ deploy_github.bat my-custom-repo-name
 # 1. 初始化 Git 並設定用戶資訊
 git init
 git config user.email "mtc98tw@gmail.com"
-git config user.name "mtc98tw"
+git config user.name "mtc98"
 git branch -M main
 
 # 2. 建立主分支並提交所有檔案
@@ -397,7 +397,7 @@ git commit -m "Deploy: GitHub Pages 部署 - 台中景點3D地圖Web版本"
 git checkout main
 
 # 5. 推送到 GitHub (需要先在 GitHub 建立 Repository)
-git remote add origin https://github.com/mtc98tw/taichung-3d-map.git
+git remote add origin https://github.com/mtc98/taichung-3d-map.git
 git push -u origin main
 git push origin gh-pages
 ```
@@ -422,7 +422,7 @@ git push origin gh-pages
 ./deploy_github.sh
 
 # 或使用手動命令
-git remote add origin https://github.com/mtc98tw/taichung-3d-map.git
+git remote add origin https://github.com/mtc98/taichung-3d-map.git
 git push -u origin main
 git push origin gh-pages
 ```
@@ -479,10 +479,10 @@ git checkout main
 # 1. 前往 GitHub → Settings → Developer settings → Personal access tokens
 # 2. 產生新權杖，勾選 "repo" 權限
 # 3. 複製權杖並使用以下命令：
-git remote set-url origin https://[YOUR_TOKEN]@github.com/mtc98tw/taichung-3d-map.git
+git remote set-url origin https://[YOUR_TOKEN]@github.com/mtc98/taichung-3d-map.git
 
 # 或使用 SSH 方式
-git remote set-url origin git@github.com:mtc98tw/taichung-3d-map.git
+git remote set-url origin git@github.com:mtc98/taichung-3d-map.git
 ```
 
 #### 問題2: Flutter build 失敗

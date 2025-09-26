@@ -2,6 +2,7 @@
 
 # 台中景點3D地圖 - GitHub 自動部署腳本
 # 作者: Thomas Mei (mtc98tw@gmail.com)
+# github name : mtc98
 # 使用方法: ./deploy_github.sh [repository_name]
 
 set -e  # 遇到錯誤就停止
@@ -88,45 +89,24 @@ else
     exit 1
 fi
 
-# 切換到 gh-pages 分支
+# 部署到 GitHub Pages
 print_status "準備 GitHub Pages 部署..."
 
-# 檢查是否存在 gh-pages 分支
-if git show-ref --verify --quiet refs/heads/gh-pages; then
-    print_status "切換到現有的 gh-pages 分支..."
-    git checkout gh-pages
-    
-    # 清除舊檔案 (保留 .git)
-    print_status "清除舊的部署檔案..."
-    # 安全的清除方式，避免意外刪除
-    rm -rf assets canvaskit icons *.html *.js *.json *.wasm *.png 2>/dev/null || true
-else
-    print_status "建立新的 gh-pages 分支..."
-    git checkout -b gh-pages
-fi
-
-# 複製 Web 檔案
-print_status "複製 Web 檔案到部署分支..."
-cp -r build/web/* .
-
-# 提交 GitHub Pages
-print_status "提交 GitHub Pages 檔案..."
-git add .
-DEPLOY_MSG="deploy: $(date '+%Y-%m-%d %H:%M:%S') GitHub Pages 自動部署"
-git commit -m "${DEPLOY_MSG}"
-
-# 推送 GitHub Pages
-print_status "推送 GitHub Pages..."
-if git push origin gh-pages; then
+# 使用 subtree 將 build/web 目錄的內容推送到 gh-pages 分支
+# 這個方法更乾淨且安全，不會動到目前的工作目錄
+print_status "正在將 build/web 目錄部署到 gh-pages 分支..."
+if git subtree push --prefix build/web origin gh-pages; then
     print_success "GitHub Pages 部署成功"
 else
-    print_warning "GitHub Pages 推送失敗，可能需要設定 GitHub 認證"
-    echo "請執行: git push origin gh-pages"
+    print_error "GitHub Pages 部署失敗！"
+    print_warning "請確認 'build/web' 目錄存在，或嘗試手動執行以下指令："
+    print_warning "git subtree push --prefix build/web origin gh-pages"
+    exit 1
 fi
 
-# 切回主分支
-print_status "切回主分支..."
-git checkout main
+# 因為未使用 checkout，所以不需要切回 main 分支
+# print_status "切回主分支..."
+# git checkout main
 
 # 完成提示
 echo "=================================="
