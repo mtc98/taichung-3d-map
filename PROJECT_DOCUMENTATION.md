@@ -333,6 +333,71 @@ async function loadYouBikeDataNormalized() {
 
 ---
 
-**專案完成日期**: 2025年
+## 🌐 GitHub 部署資訊
+
+### 📦 Repository 資訊
+- **GitHub 帳號**: mtc98tw@gmail.com
+- **Repository 名稱**: taichung-3d-map
+- **Repository URL**: `https://github.com/[您的用戶名]/taichung-3d-map`
+- **線上展示網址**: `https://[您的用戶名].github.io/taichung-3d-map`
+
+### 🚀 部署流程
+```bash
+# 1. 初始化 Git 並設定用戶資訊
+git init
+git config user.email "mtc98tw@gmail.com"
+git config user.name "mtc98tw"
+git branch -M main
+
+# 2. 建立主分支並提交所有檔案
+git add .
+git commit -m "Initial commit: 台中景點3D地圖專案 - 支援iOS/Android/Web/macOS平台"
+
+# 3. 建立並編譯 Web 版本
+flutter build web --release
+
+# 4. 建立 GitHub Pages 部署分支
+git checkout -b gh-pages
+cp -r build/web/* .
+git add .
+git commit -m "Deploy: GitHub Pages 部署 - 台中景點3D地圖Web版本"
+git checkout main
+
+# 5. 推送到 GitHub (需要先在 GitHub 建立 Repository)
+git remote add origin https://github.com/[您的用戶名]/taichung-3d-map.git
+git push -u origin main
+git push origin gh-pages
+```
+
+### ⚙️ GitHub Pages 設定
+1. 前往 Repository → Settings → Pages
+2. Source: Deploy from a branch
+3. Branch: gh-pages / (root)
+4. 儲存後等待 2-3 分鐘即可訪問
+
+### 🔄 更新部署流程
+```bash
+# 當有程式碼更新時：
+# 1. 更新主分支
+git add .
+git commit -m "更新: [描述變更內容]"
+git push origin main
+
+# 2. 重新建立 Web 版本並部署
+flutter build web --release
+git checkout gh-pages
+rm -rf !(.|.git)  # 清除舊檔案 (保留 .git)
+cp -r build/web/* .
+git add .
+git commit -m "Deploy: 更新網站部署"
+git push origin gh-pages
+git checkout main
+```
+
+---
+
+**專案完成日期**: 2024年9月26日
 **維護狀態**: 🟢 積極維護中
-**聯絡資訊**: mtc98@me.com  by Thomas  Mei  2025/09/26
+**GitHub**: https://github.com/[您的用戶名]/taichung-3d-map
+**線上展示**: https://[您的用戶名].github.io/taichung-3d-map
+**聯絡資訊**: mtc98tw@gmail.com by Thomas Mei
