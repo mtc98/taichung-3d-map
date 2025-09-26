@@ -527,6 +527,42 @@ flutter build web --release
 - 檢查 `pubspec.yaml` 中的 assets 設定正確
 - 確認 HTML 中的圖片路徑正確
 
+#### 問題6: 部署腳本意外刪除檔案
+**症狀**：執行 `./deploy_github.sh` 後，專案檔案消失
+**原因**：舊版腳本使用了 `rm -rf !(.|.git)` 危險命令
+**解決方案**：
+```bash
+# 1. 立即恢復檔案
+git reset --hard HEAD
+
+# 2. 確認檔案恢復
+ls -la assets/
+ls -la lib/
+
+# 3. 使用修正後的腳本
+git pull  # 如果需要更新腳本
+./deploy_github.sh
+```
+
+**預防措施**：
+- ✅ 新版腳本已修正，使用安全的檔案清除方式
+- ✅ 只刪除 Web 部署相關檔案 (`assets`, `canvaskit`, `icons`, `*.html`, `*.js`, `*.json`, `*.wasm`, `*.png`)
+- ✅ 保護所有重要的專案檔案
+
+#### 問題7: Repository not found 錯誤
+**症狀**：`git push` 時出現 "Repository not found" 錯誤
+**原因**：GitHub Repository 尚未建立
+**解決方案**：
+1. **先建立 GitHub Repository**：
+   - 前往 https://github.com/new
+   - Repository name: `taichung-3d-map`
+   - 設為 Public
+   - 不要勾選預設檔案
+2. **再執行部署腳本**：
+   ```bash
+   ./deploy_github.sh
+   ```
+
 ### 📞 取得協助
 
 如果遇到其他問題：
@@ -534,6 +570,21 @@ flutter build web --release
 2. **查看瀏覽器開發者工具**：按 F12 檢查 Console 是否有錯誤訊息
 3. **GitHub Pages 狀態頁面**：檢查 https://www.githubstatus.com/
 4. **聯絡維護者**：mtc98tw@gmail.com
+
+### 🔄 版本更新記錄
+
+#### v1.1 (2024-09-26)
+- **🚨 重要修正**：修復部署腳本的檔案刪除問題
+- **🔧 改善**：使用安全的檔案清除方式，避免意外刪除專案檔案
+- **📝 新增**：詳細的故障排除指南和常見問題解答
+- **🛡️ 安全性**：保護重要專案檔案，只清除部署相關檔案
+
+#### v1.0 (2024-09-26)
+- **🎉 初版發布**：完整的台中景點3D地圖專案
+- **🚀 功能**：支援 iOS/Android/Web/macOS 四平台
+- **🗺️ 地圖**：3D 景點導覽 + YouBike 2.0 整合
+- **📱 定位**：GPS 定位服務 + 即時位置更新
+- **🤖 自動化**：GitHub Pages 自動部署腳本
 
 ---
 
