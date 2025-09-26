@@ -32,7 +32,7 @@ print_error() {
 
 # 檢查參數
 REPO_NAME=${1:-"taichung-3d-map"}
-GITHUB_USERNAME="mtc98tw"  # 您的 GitHub 用戶名
+GITHUB_USERNAME="mtc98"  # 您的 GitHub 用戶名
 REPO_URL="https://github.com/${GITHUB_USERNAME}/${REPO_NAME}.git"
 
 print_status "開始部署台中景點3D地圖到 GitHub..."
@@ -45,7 +45,7 @@ if [ ! -d ".git" ]; then
     print_status "正在初始化 Git..."
     git init
     git config user.email "mtc98tw@gmail.com"
-    git config user.name "mtc98tw"
+    git config user.name "mtc98"
     git branch -M main
     print_success "Git 初始化完成"
 fi
