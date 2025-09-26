@@ -342,6 +342,39 @@ async function loadYouBikeDataNormalized() {
 - **線上展示網址**: `https://[您的用戶名].github.io/taichung-3d-map`
 
 ### 🚀 部署流程
+
+#### 方法1: 自動化腳本部署 (推薦)
+
+**Mac/Linux 系統：**
+```bash
+# 直接執行自動化腳本
+./deploy_github.sh
+
+# 或指定不同的 repository 名稱
+./deploy_github.sh my-custom-repo-name
+```
+
+**Windows 系統：**
+```batch
+# 直接執行自動化腳本
+deploy_github.bat
+
+# 或指定不同的 repository 名稱
+deploy_github.bat my-custom-repo-name
+```
+
+**腳本功能：**
+- ✅ 自動檢查和初始化 Git
+- ✅ 自動設定用戶資訊 (mtc98tw@gmail.com)
+- ✅ 自動提交目前變更
+- ✅ 自動建立 Flutter Web 版本
+- ✅ 自動建立和管理 gh-pages 分支
+- ✅ 自動推送到 GitHub
+- ✅ 彩色輸出和錯誤處理
+- ✅ 完整的進度提示
+
+#### 方法2: 手動命令部署
+
 ```bash
 # 1. 初始化 Git 並設定用戶資訊
 git init
@@ -364,18 +397,60 @@ git commit -m "Deploy: GitHub Pages 部署 - 台中景點3D地圖Web版本"
 git checkout main
 
 # 5. 推送到 GitHub (需要先在 GitHub 建立 Repository)
-git remote add origin https://github.com/[您的用戶名]/taichung-3d-map.git
+git remote add origin https://github.com/mtc98tw/taichung-3d-map.git
+git push -u origin main
+git push origin gh-pages
+```
+
+### 📋 GitHub Repository 建立步驟
+
+#### Step 1: 建立 GitHub Repository
+1. **前往 GitHub**：https://github.com/new
+2. **登入帳號**：使用 mtc98tw@gmail.com
+3. **Repository 設定**：
+   - Repository name: `taichung-3d-map`
+   - Description: `台中景點3D地圖 - Flutter Web應用，支援3D景點導覽和YouBike站點查詢`
+   - Visibility: **Public** (GitHub Pages 免費版本需要)
+   - **不要勾選** "Add a README file" (因為本地已有檔案)
+   - **不要勾選** "Add .gitignore" (已存在)
+   - **不要勾選** "Choose a license" (可稍後添加)
+4. **點擊 "Create repository"**
+
+#### Step 2: 執行部署
+```bash
+# 使用自動化腳本 (推薦)
+./deploy_github.sh
+
+# 或使用手動命令
+git remote add origin https://github.com/mtc98tw/taichung-3d-map.git
 git push -u origin main
 git push origin gh-pages
 ```
 
 ### ⚙️ GitHub Pages 設定
-1. 前往 Repository → Settings → Pages
-2. Source: Deploy from a branch
-3. Branch: gh-pages / (root)
-4. 儲存後等待 2-3 分鐘即可訪問
+1. **前往 Repository 設定頁面**：
+   - 在您的 Repository 頁面點擊 **"Settings"** 標籤
+2. **找到 Pages 設定**：
+   - 在左側選單中找到並點擊 **"Pages"**
+3. **配置部署來源**：
+   - Source: 選擇 **"Deploy from a branch"**
+   - Branch: 選擇 **"gh-pages"**
+   - Folder: 選擇 **"/ (root)"**
+4. **儲存設定**：
+   - 點擊 **"Save"** 按鈕
+5. **等待部署**：
+   - 通常需要 2-3 分鐘處理
+   - 頁面會顯示部署狀態和網址
 
 ### 🔄 更新部署流程
+
+#### 使用自動化腳本更新 (推薦)
+```bash
+# 一鍵更新和重新部署
+./deploy_github.sh
+```
+
+#### 手動更新流程
 ```bash
 # 當有程式碼更新時：
 # 1. 更新主分支
@@ -393,6 +468,72 @@ git commit -m "Deploy: 更新網站部署"
 git push origin gh-pages
 git checkout main
 ```
+
+### 🚨 故障排除與常見問題
+
+#### 問題1: 推送失敗 - 認證問題
+**症狀**：`git push` 時出現 403 或認證錯誤
+**解決方案**：
+```bash
+# 設定個人存取權杖 (Personal Access Token)
+# 1. 前往 GitHub → Settings → Developer settings → Personal access tokens
+# 2. 產生新權杖，勾選 "repo" 權限
+# 3. 複製權杖並使用以下命令：
+git remote set-url origin https://[YOUR_TOKEN]@github.com/mtc98tw/taichung-3d-map.git
+
+# 或使用 SSH 方式
+git remote set-url origin git@github.com:mtc98tw/taichung-3d-map.git
+```
+
+#### 問題2: Flutter build 失敗
+**症狀**：`flutter build web` 出現錯誤
+**解決方案**：
+```bash
+# 清理專案並重新建立
+flutter clean
+flutter pub get
+flutter build web --release
+```
+
+#### 問題3: GitHub Pages 404 錯誤
+**症狀**：網站顯示 "404 - There isn't a GitHub Pages site here"
+**檢查清單**：
+- ✅ Repository 是否設為 Public
+- ✅ gh-pages 分支是否存在且有檔案
+- ✅ Settings → Pages 是否正確設定為 gh-pages 分支
+- ✅ 等待 5-10 分鐘讓 GitHub 處理部署
+
+#### 問題4: 網站無法正常載入
+**症狀**：網站開啟但功能異常
+**可能原因與解決方案**：
+```bash
+# 檢查 build/web/index.html 是否存在
+ls -la build/web/
+
+# 確保 assets 路徑正確
+# 檢查 assets/images/ 目錄下的檔案是否完整
+ls -la assets/images/
+
+# 重新建立並部署
+flutter clean
+flutter build web --release
+./deploy_github.sh
+```
+
+#### 問題5: 圖片無法顯示
+**症狀**：網站載入但圖片顯示不出來
+**檢查項目**：
+- 確認 `assets/images/taichung.gif` 等檔案存在
+- 檢查 `pubspec.yaml` 中的 assets 設定正確
+- 確認 HTML 中的圖片路徑正確
+
+### 📞 取得協助
+
+如果遇到其他問題：
+1. **檢查 GitHub Actions 狀態**：在 Repository 的 Actions 標籤查看部署狀態
+2. **查看瀏覽器開發者工具**：按 F12 檢查 Console 是否有錯誤訊息
+3. **GitHub Pages 狀態頁面**：檢查 https://www.githubstatus.com/
+4. **聯絡維護者**：mtc98tw@gmail.com
 
 ---
 
