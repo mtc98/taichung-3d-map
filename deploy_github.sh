@@ -98,7 +98,8 @@ if git show-ref --verify --quiet refs/heads/gh-pages; then
     
     # 清除舊檔案 (保留 .git)
     print_status "清除舊的部署檔案..."
-    find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '.gitignore' -exec rm -rf {} +
+    # 安全的清除方式，避免意外刪除
+    rm -rf assets canvaskit icons *.html *.js *.json *.wasm *.png 2>/dev/null || true
 else
     print_status "建立新的 gh-pages 分支..."
     git checkout -b gh-pages

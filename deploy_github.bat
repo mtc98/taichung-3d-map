@@ -87,10 +87,12 @@ if errorlevel 1 (
     echo 🔧 切換到現有的 gh-pages 分支...
     git checkout gh-pages
     
-    REM 清除舊檔案 (Windows版本)
+    REM 清除舊檔案 (Windows版本 - 安全方式)
     echo 🔧 清除舊的部署檔案...
-    for /f "delims=" %%i in ('dir /b /a-d ^| findstr /v /c:".git"') do del "%%i" 2>nul
-    for /f "delims=" %%i in ('dir /b /ad ^| findstr /v /c:".git"') do rmdir /s /q "%%i" 2>nul
+    if exist assets rmdir /s /q assets 2>nul
+    if exist canvaskit rmdir /s /q canvaskit 2>nul
+    if exist icons rmdir /s /q icons 2>nul
+    del *.html *.js *.json *.wasm *.png 2>nul
 )
 
 REM 複製 Web 檔案
