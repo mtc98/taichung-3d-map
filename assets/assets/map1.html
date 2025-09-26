@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>台中景點</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="shortcut icon" href="favicon.svg">
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background-color: #fff9e6;
+            overflow: hidden; /* 避免滑動條出現 */
+        }
+
+        #標題 {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;  /* 改為白色背景 */
+            color: #1976d2;  /* 改為藍色文字 */
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            text-align: center;
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            border: 2px solid #1976d2;  /* 加入藍色邊框 */
+            display: flex;
+            align-items: center;
+            gap: 8px;  /* 圖片和文字間的間距 */
+        }
+
+        #標題 img {
+            height: 24px;  /* 設定GIF高度 */
+            width: auto;
+        }
+
+        #地圖容器 {
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #左側面板,
+        #右側控制 {
+            position: fixed;
+            top: 70px; /* 稍微往下移動 */
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: transform 0.4s ease, opacity 0.4s ease; /* 加入動畫 */
+        }
+
+        #左側面板 {
+            left: 15px;
+        }
+
+        #右側控制 {
+            right: 15px;
+            min-width: 200px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            color: #222;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+        }
+
+        .景點按鈕 {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: #e3eaff;
+            color: #222296;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .景點按鈕:hover {
+            background: #b6c8ff;
+        }
+
+        #右側控制 .景點按鈕 {
+            background: #F7E7A1;
+            color: #5a4a00;
+        }
+        #右側控制 .景點按鈕:hover {
+            background: #E9D784;
+        }
+
+        /* 面板切換按鈕 */
+        .面板切換按鈕 {
+            position: fixed;
+            z-index: 25;
+            background: rgba(34, 34, 150, 0.95);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 3px 9px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .面板切換按鈕:hover {
+            background: rgb(49, 180, 224);
+            transform: scale(1.1);
+        }
+
+        #leftPanelToggle {
+            top: 70px;
+            left: 15px;
+        }
+
+        #rightPanelToggle {
+            top: 70px;
+            right: 15px;
+        }
+
+        /* 面板隱藏狀態 */
+        .面板隱藏 {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #左側面板.面板隱藏 {
+            transform: translateX(-120%);
+        }
+
+        #右側控制.面板隱藏 {
+            transform: translateX(120%);
+        }
+
+        /* 右上角固定資訊面板 */
+        #spot-info-panel {
+            position: fixed;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            padding: 20px;
+            z-index: 30;
+            font-family: Arial, sans-serif;
+            border: 1px solid rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+
+        /* 桌面版樣式 */
+        @media (min-width: 768px) {
+            #spot-info-panel {
+                top: 70px;
+                right: 15px;
+                width: 350px;
+                max-height: 500px;
+            }
+        }
+
+        /* 移動設備樣式 */
+        @media (max-width: 767px) {
+            #spot-info-panel {
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 85vw;
+                max-width: 320px;
+                max-height: 70vh;
+            }
+
+            /* 移動設備上的標題調整 */
+            #標題 {
+                font-size: 12px !important;
+                padding: 8px 15px !important;
+                gap: 6px !important;
+                white-space: nowrap; /* 防止換行 */
+                max-width: 90vw; /* 限制最大寬度 */
+            }
+
+            #標題 img {
+                height: 20px !important;
+            }
+
+            /* 移動設備上的照片高度調整 */
+            #spot-info-panel .spot-image {
+                height: 150px !important;
+            }
+
+            /* 移動設備上的標題字體調整 */
+            #spot-info-panel h3 {
+                font-size: 16px !important;
+            }
+
+            /* 移動設備上的內容字體調整 */
+            #spot-info-panel p {
+                font-size: 13px !important;
+            }
+        }
+
+        /* 景點照片樣式 */
+        #spot-info-panel .spot-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        #spot-info-panel .close-btn {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        #spot-info-panel .close-btn:hover {
+            background: rgba(0,0,0,0.1);
+            color: #333;
+        }
+
+        #spot-info-panel h3 {
+            margin: 0 0 12px 0;
+            color: #2222A0;
+            font-size: 18px;
+            padding-right: 30px;
+        }
+
+        #spot-info-panel p {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        #spot-info-panel .tour-btn {
+            background: linear-gradient(145deg, #4285f4, #1a73e8);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 15px;
+            width: 100%;
+            margin-top: 15px;
+            box-shadow: 0 3px 8px rgba(66, 133, 244, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        #spot-info-panel .tour-btn:hover {
+            background: linear-gradient(145deg, #1a73e8, #1557b0);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
+        }
+
+        #spot-info-panel .tour-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 加载动画 */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="標題">
+        <img src="images/taichung.gif" alt="台中" onerror="this.style.display='none'; console.log('圖片載入失敗: taichung.gif');" />
+        台中景點地圖
+    </div>
+
+    <!-- 面板 (加入預設隱藏 class) -->
+    <div id="左側面板" class="面板隱藏"></div>
+    <div id="右側控制" class="面板隱藏"></div>
+
+    <!-- 地圖容器 -->
+    <div id="地圖容器">
+        <!-- 加载状态指示器 -->
+        <div id="loading-indicator" style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; font-family: Arial, sans-serif;">
+            <div style="border: 4px solid #f3f3f3; border-top: 4px solid #1976d2; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite;"></div>
+            <p style="margin-top: 20px; color: #1976d2; font-size: 16px;">正在加载地图...</p>
+            <p style="color: #666; font-size: 14px;">如果长时间无响应，请在浏览器中打开</p>
+        </div>
+    </div>
+
+    <!-- 右上角固定資訊面板 -->
+    <div id="spot-info-panel" style="display: none;">
+        <button id="close-spot-panel" class="close-btn">×</button>
+        <div id="spot-info-content">
+            <!-- 動態內容將在這裡顯示 -->
+        </div>
+    </div>
+
+    <!-- 新增的固定按鈕 -->
+    <button id="leftPanelToggle" class="面板切換按鈕" title="切換景點面板">🗺️</button>
+    <button id="rightPanelToggle" class="面板切換按鈕" title="切換視角控制">⚙️</button>
+
+    <script async defer>
+        console.log('🚀 開始載入 Google Maps API...');
+        console.log('📍 當前網域:', window.location.href);
+        
+        (g => { var h, a, k, p = "The Google Maps JavaScript API", c = "google", l = "importLibrary", q = "__ib__", m = document, b = window; b = b[c] || (b[c] = {}); var d = b.maps || (b.maps = {}), r = new Set, e = new URLSearchParams, u = () => h || (h = new Promise(async (f, n) => { await (a = m.createElement("script")); e.set("libraries", [...r] + ""); for (k in g) e.set(k.replace(/[A-Z]/g, t => "_" + t[0].toLowerCase()), g[k]); e.set("callback", c + ".maps." + q); a.src = `https://maps.${c}apis.com/maps/api/js?` + e; console.log('📡 載入 Maps API URL:', a.src); d[q] = f; a.onerror = (err) => { console.error('❌ Google Maps API 載入失敗:', err); h = n(Error(p + " could not load.")); }; a.onload = () => { console.log('✅ Google Maps API 腳本載入成功'); }; a.nonce = m.querySelector("script[nonce]")?.nonce || ""; m.head.append(a) })); d[l] ? console.warn(p + " only loads once. Ignoring:", g) : d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n)) })({
+            key: "AIzaSyDhFmyyK0ipeOreWD1D7Ry4wEE53EudGdA",
+            v: "beta",
+        });
+        
+        // 監聽 Google Maps API 載入完成
+        window.addEventListener('load', () => {
+            console.log('📄 頁面載入完成');
+            if (window.google && window.google.maps) {
+                console.log('✅ Google Maps API 已可用');
+            } else {
+                console.log('❌ Google Maps API 不可用');
+            }
+        });
+    </script>
+    <script>
+        // --- 全域變數 ---
+        const taichungSpots = [
+            {
+                name: "台中市政府",
+                pos: { lat: 24.163261, lng: 120.647601, altitude: 200 },
+                camera: { center: { lat: 24.163261, lng: 120.647601, altitude: 500 }, range: 5000, tilt: 45, heading: 0 },
+                description: "台中市的行政中心，現代化建築群",
+                icon: "🏛️",
+                type: "government",
+                image: "images/image1.jpeg"
+            },
+            {
+                name: "國立自然科學博物館",
+                pos: { lat: 24.157936, lng: 120.665982, altitude: 100 },
+                camera: { center: { lat: 24.157936, lng: 120.665982, altitude: 300 }, range: 3000, tilt: 45, heading: 0 },
+                description: "台灣知名的科學教育場所，適合親子同遊",
+                icon: "🔬",
+                type: "museum",
+                image: "images/image2.jpeg"
+            },
+            {
+                name: "台中公園",
+                pos: { lat: 24.144592, lng: 120.683923, altitude: 80 },
+                camera: { center: { lat: 24.144592, lng: 120.683923, altitude: 200 }, range: 2500, tilt: 45, heading: 0 },
+                description: "台中市中心的綠色心臟，湖心亭是著名地標",
+                icon: "🌳",
+                type: "park",
+                image: "images/image3.jpeg"
+            },
+            {
+                name: "彩虹眷村",
+                pos: { lat: 24.133976, lng: 120.610913, altitude: 80 },
+                camera: { center: { lat: 24.133976, lng: 120.610913, altitude: 200 }, range: 2500, tilt: 45, heading: 0 },
+                description: "充滿彩色壁畫的眷村，是台中著名文創景點",
+                icon: "🎨",
+                type: "cultural",
+                image: "images/image6.jpeg"
+            },
+            {
+                name: "秋紅谷廣場",
+                pos: { lat: 24.167921, lng: 120.639110, altitude: 80 },
+                camera: { center: { lat: 24.167921, lng: 120.639110, altitude: 200 }, range: 2500, tilt: 45, heading: 0 },
+                description: "下凹式景觀公園，夜晚燈光美輪美奐",
+                icon: "🍂",
+                type: "park",
+                image: "images/image5.jpeg"
+            },
+            {
+                name: "高美濕地",
+                pos: { lat: 24.305556, lng: 120.561667, altitude: 50 },
+                camera: { center: { lat: 24.305556, lng: 120.561667, altitude: 150 }, range: 4000, tilt: 45, heading: 0 },
+                description: "台灣西海岸重要濕地，觀賞夕陽的絕佳地點",
+                icon: "🌅",
+                type: "nature",
+                image: "images/image4.jpeg"
+            },
+            {
+                name: "東海大學路思義教堂",
+                pos: { lat: 24.179055, lng: 120.600997, altitude: 80 },
+                camera: { center: { lat: 24.179055, lng: 120.600997, altitude: 200 }, range: 2500, tilt: 45, heading: 0 },
+                description: "建築大師貝聿銘設計的現代教堂建築",
+                icon: "⛪",
+                type: "architecture",
+                image: "images/image7.jpeg"
+            },
+            {
+                name: "一中街商圈",
+                pos: { lat: 24.147736, lng: 120.684436, altitude: 80 },
+                camera: { center: { lat: 24.147736, lng: 120.684436, altitude: 200 }, range: 2500, tilt: 45, heading: 0 },
+                description: "台中知名夜市商圈，美食小吃集中地",
+                icon: "🍜",
+                type: "shopping",
+                image: "images/image8.jpeg"
+            },
+            {
+                name: "勤美誠品綠園道",
+                pos: { lat: 24.1509963, lng: 120.663848, altitude: 85 },
+                camera: { center: { lat: 24.1509963, lng: 120.663848, altitude: 200 }, range: 2500, tilt: 45, heading: 0 },
+                description: "結合書店、餐飲與藝文空間的複合式文創商場",
+                icon: "📚",
+                type: "eslite",
+                image: "images/image9.jpeg"
+            }
+        ];
+
+        let map3D = null;
+        let initialCamera = null;
+        let heightPercent = 50;
+        let tiltDegrees = null;
+        let MapMode = null;
+
+        // --- 狀態變數 ---
+        let isLeftPanelOpen = false;
+        let isRightPanelOpen = false;
+
+        async function init() {
+            console.log('🚀 开始初始化地图...');
+
+            try {
+                const { Map3DElement, MapMode: ImportedMapMode, Marker3DElement, Marker3DInteractiveElement } = await google.maps.importLibrary("maps3d");
+                const { PinElement } = await google.maps.importLibrary("marker");
+
+                console.log('✅ Google Maps 3D API 加载成功');
+
+                // 將 MapMode 設為全域變數
+                MapMode = ImportedMapMode;
+
+                map3D = new Map3DElement({
+                    center: { lat: 24.147736, lng: 120.673648, altitude: 2000 },
+                    range: 30000,
+                    tilt: 30,
+                    mode: MapMode.SATELLITE,
+                });
+
+                // 隱藏地圖地名，只顯示景點圖標
+                map3D.addEventListener('gmp-load', () => {
+                    if (map3D.map) {
+                        map3D.map.setOptions({
+                            styles: [{
+                                featureType: "all",
+                                elementType: "labels",
+                                stylers: [{ visibility: "off" }]
+                            }]
+                        });
+                    }
+                });
+
+                document.getElementById('地圖容器').append(map3D);
+
+                // 隐藏加载指示器
+                const loadingIndicator = document.getElementById('loading-indicator');
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+
+                // 記錄初始相機狀態
+                initialCamera = {
+                    center: {
+                        lat: map3D.center.lat,
+                        lng: map3D.center.lng,
+                        altitude: map3D.center.altitude
+                    },
+                    range: map3D.range,
+                    tilt: map3D.tilt,
+                    heading: map3D.heading ?? 0
+                };
+                tiltDegrees = Math.min(90, Math.max(20, Math.round(initialCamera.tilt)));
+
+                // 建立面板內容
+                buildLeftPanel();
+                buildRightPanel();
+
+                // 設定事件監聽
+                setupEventListeners();
+
+                // 確保地圖地名被隱藏
+                setTimeout(() => {
+                    hideMapLabels();
+                }, 1000);
+
+                // 新增景點標記
+                taichungSpots.forEach(spot => {
+                    const marker = new Marker3DInteractiveElement({
+                        position: spot.pos,
+                        label: `${spot.icon} ${spot.name}`,
+                        altitudeMode: "ABSOLUTE",
+                        extruded: true,
+                    });
+
+                    const pin = new PinElement({
+                        background: getMarkerColor(spot.type),
+                        borderColor: "#ffffff",
+                        glyphColor: getGlyphColor(spot.type),
+                        glyph: spot.icon,
+                        scale: getMarkerScale(spot.type)
+                    });
+
+                    marker.append(pin);
+
+                    marker.addEventListener("gmp-click", (event) => {
+                        showFixedSpotPanel(spot);
+                        event.stopPropagation();
+                    });
+
+                    map3D.append(marker);
+                });
+
+            } catch (error) {
+                console.error('❌ 地图加载失败:', error);
+                const container = document.getElementById('地圖容器');
+                container.innerHTML = `
+                    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; font-family: Arial, sans-serif;">
+                        <h2 style="color: #d32f2f;">地图加载失败</h2>
+                        <p style="color: #666; text-align: center; max-width: 400px;">
+                            请在支持WebGL的浏览器中打开，或检查网络连接
+                        </p>
+                        <p style="color: #1976d2; font-size: 14px;">
+                            错误: ${error.message}
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        // 為不同類型景點設定不同顏色
+        function getMarkerColor(type) {
+            const colors = {
+                'government': '#4285f4',
+                'museum': '#34a853',
+                'park': '#0f9d58',
+                'cultural': '#ea4335',
+                'nature': '#ff6d01',
+                'architecture': '#9c27b0',
+                'shopping': '#ff9800',
+                'eslite': '#F5E907'
+            };
+            return colors[type] || '#757575';
+        }
+
+        function getGlyphColor(type) {
+            const glyphColors = {
+                'government': '#ffffff',
+                'museum': '#ffffff',
+                'park': '#ffff00',
+                'cultural': '#ffffff',
+                'nature': '#ffffff',
+                'architecture': '#ffeb3b',
+                'shopping': '#000000',
+                'eslite': '#00aa00'
+            };
+            return glyphColors[type] || '#ffffff';
+        }
+
+        function getMarkerScale(type) {
+            const scales = {
+                'government': 1.5,
+                'museum': 1.3,
+                'park': 1.4,
+                'cultural': 1.2,
+                'nature': 1.6,
+                'architecture': 1.3,
+                'shopping': 1.1,
+                'eslite': 1.7
+            };
+            return scales[type] || 1.2;
+        }
+
+        // 顯示右上角固定景點面板
+        function showFixedSpotPanel(spot) {
+            const panel = document.getElementById('spot-info-panel');
+            const content = document.getElementById('spot-info-content');
+
+            content.innerHTML = `
+                <h3>${spot.icon} ${spot.name}</h3>
+                <img src="${spot.image}" alt="${spot.name}" class="spot-image" onerror="this.style.display='none'">
+                <p style="color: #555; margin-bottom: 12px;">${spot.description}</p>
+                <p style="font-size: 13px; color: #777; margin-bottom: 8px;">
+                    <strong>類型：</strong>${getSpotTypeText(spot.type)}
+                </p>
+                <p style="font-size: 13px; color: #777; margin-bottom: 8px;">
+                    <strong>座標：</strong>${spot.pos.lat.toFixed(4)}, ${spot.pos.lng.toFixed(4)}
+                </p>
+                <button onclick="startFixedSpotTour('${spot.name}')" class="tour-btn">
+                    🎯 景點導覽
+                </button>
+            `;
+
+            panel.style.display = 'block';
+        }
+
+        function getSpotTypeText(type) {
+            const typeTexts = {
+                'government': '政府機關',
+                'museum': '博物館',
+                'park': '公園綠地',
+                'cultural': '文化景點',
+                'nature': '自然景觀',
+                'architecture': '建築景點',
+                'shopping': '購物商圈',
+                'eslite': '文創商場'
+            };
+            return typeTexts[type] || '景點';
+        }
+
+        function closeFixedSpotPanel() {
+            const panel = document.getElementById('spot-info-panel');
+            panel.style.display = 'none';
+        }
+
+        function startFixedSpotTour(spotName) {
+            const spot = taichungSpots.find(s => s.name === spotName);
+            if (spot) {
+                closeFixedSpotPanel();
+                flyToAndRotate(spot);
+            }
+        }
+
+        // 顯示地圖地名
+        function showMapLabels() {
+            if (map3D && map3D.map) {
+                map3D.map.setOptions({
+                    styles: []
+                });
+            }
+        }
+
+        // 隱藏地圖地名
+        function hideMapLabels() {
+            if (map3D && map3D.map) {
+                map3D.map.setOptions({
+                    styles: [{
+                        featureType: "all",
+                        elementType: "labels",
+                        stylers: [{ visibility: "off" }]
+                    }]
+                });
+            }
+        }
+
+        function flyToAndRotate(spot) {
+            map3D.mode = MapMode.HYBRID;
+            showMapLabels();
+
+            const closeupCamera = {
+                center: { ...spot.pos },
+                range: Math.max(spot.camera.range * 0.45, 600) * (heightPercent / 100),
+                tilt: tiltDegrees ?? initialCamera.tilt,
+                heading: map3D.heading ?? spot.camera.heading ?? 0
+            };
+            map3D.flyCameraTo({
+                endCamera: closeupCamera,
+                durationMillis: 5000,
+            });
+            map3D.addEventListener('gmp-animationend', () => {
+                map3D.flyCameraAround({
+                    camera: closeupCamera,
+                    durationMillis: 6000,
+                    rounds: 1
+                });
+
+                setTimeout(() => {
+                    map3D.mode = MapMode.SATELLITE;
+                    hideMapLabels();
+                }, 9000);
+            }, { once: true });
+        }
+
+        function resetToInitial() {
+            if (!initialCamera) return;
+            heightPercent = 100;
+            tiltDegrees = Math.min(90, Math.max(20, Math.round(initialCamera.tilt)));
+
+            map3D.mode = MapMode.SATELLITE;
+            hideMapLabels();
+
+            map3D.flyCameraTo({
+                endCamera: initialCamera,
+                durationMillis: 1200,
+            });
+            buildRightPanel();
+        }
+
+        // --- 面板建立與控制 ---
+
+        function buildLeftPanel() {
+            const panel = document.getElementById('左側面板');
+            panel.innerHTML = '';
+            taichungSpots.forEach((spot) => {
+                const btn = document.createElement('button');
+                btn.className = '景點按鈕';
+                btn.textContent = `${spot.icon} ${spot.name}`;
+                btn.onclick = () => {
+                    showFixedSpotPanel(spot);
+                    if (isLeftPanelOpen) {
+                        togglePanel('left', false);
+                    }
+                };
+                panel.appendChild(btn);
+            });
+        }
+
+        function buildRightPanel() {
+            const controls = document.getElementById('右側控制');
+            controls.innerHTML = '';
+            const title = document.createElement('div');
+            title.style.fontWeight = 'bold';
+            title.style.fontFamily = 'Arial, sans-serif';
+            title.textContent = '視角控制';
+            controls.appendChild(title);
+
+            // 仰角控制
+            const tiltGroup = document.createElement('div');
+            tiltGroup.className = 'control-group';
+            const tiltLabel = document.createElement('label');
+            tiltLabel.textContent = `仰角：${tiltDegrees}°`;
+            const tiltInput = document.createElement('input');
+            Object.assign(tiltInput, { type: 'range', min: '20', max: '90', step: '5', value: String(tiltDegrees) });
+            tiltInput.oninput = () => {
+                tiltDegrees = parseInt(tiltInput.value, 10);
+                tiltLabel.textContent = `仰角：${tiltDegrees}°`;
+            };
+            tiltGroup.append(tiltLabel, tiltInput);
+            controls.appendChild(tiltGroup);
+
+            // 高度控制
+            const heightGroup = document.createElement('div');
+            heightGroup.className = 'control-group';
+            const heightLabel = document.createElement('label');
+            heightLabel.textContent = `高度：${heightPercent}%`;
+            const heightInput = document.createElement('input');
+            Object.assign(heightInput, { type: 'range', min: '20', max: '120', step: '10', value: String(heightPercent) });
+            heightInput.oninput = () => {
+                heightPercent = parseInt(heightInput.value, 10);
+                heightLabel.textContent = `高度：${heightPercent}%`;
+            };
+            heightGroup.append(heightLabel, heightInput);
+            controls.appendChild(heightGroup);
+
+            // 重置按鈕
+            const resetBtn = document.createElement('button');
+            resetBtn.className = '景點按鈕';
+            resetBtn.textContent = '重置視角';
+            resetBtn.onclick = resetToInitial;
+            controls.appendChild(resetBtn);
+        }
+
+        function togglePanel(side, forceState) {
+            const isOpen = side === 'left' ? isLeftPanelOpen : isRightPanelOpen;
+            const newState = forceState === undefined ? !isOpen : forceState;
+
+            const panel = document.getElementById(side === 'left' ? '左側面板' : '右側控制');
+            const toggleBtn = document.getElementById(side === 'left' ? 'leftPanelToggle' : 'rightPanelToggle');
+
+            panel.classList.toggle('面板隱藏', !newState);
+
+            if (side === 'left') {
+                isLeftPanelOpen = newState;
+                toggleBtn.textContent = newState ? '⬅️' : '🗺️';
+            } else {
+                isRightPanelOpen = newState;
+                toggleBtn.textContent = newState ? '➡️' : '⚙️';
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('leftPanelToggle').onclick = () => togglePanel('left');
+            document.getElementById('rightPanelToggle').onclick = () => togglePanel('right');
+            document.getElementById('close-spot-panel').onclick = closeFixedSpotPanel;
+
+            // 點擊面板外部時，關閉面板
+            document.getElementById('地圖容器').addEventListener('click', () => {
+                if(isLeftPanelOpen) togglePanel('left', false);
+                if(isRightPanelOpen) togglePanel('right', false);
+                closeFixedSpotPanel();
+            });
+
+            // 標題提供點擊重置功能
+            const header = document.getElementById('標題');
+            header.style.cursor = 'pointer';
+            header.title = '點擊回到最初視角與位置';
+            header.onclick = resetToInitial;
+        }
+
+        // 圖片路徑修正函數 (解決 macOS 路徑問題)
+        function fixImagePaths() {
+            console.log('🔧 開始修正圖片路徑 (macOS 兼容性)...');
+            
+            // 修正標題 GIF
+            const titleImg = document.querySelector('#標題 img');
+            if (titleImg) {
+                console.log('找到標題圖片，開始測試路徑...');
+                
+                // 嘗試多種路徑
+                const pathsToTry = [
+                    'images/taichung.gif',    // 原始路徑
+                    'images/taichung.gif',       // 相對於 assets
+                    './images/taichung.gif',     // 明確相對路徑
+                    '/images/taichung.gif'       // 絕對路徑
+                ];
+                
+                let pathIndex = 0;
+                function tryNextPath() {
+                    if (pathIndex < pathsToTry.length) {
+                        const testPath = pathsToTry[pathIndex];
+                        console.log(`嘗試路徑 ${pathIndex + 1}: ${testPath}`);
+                        
+                        const testImg = new Image();
+                        testImg.onload = () => {
+                            console.log(`✅ 成功載入圖片: ${testPath}`);
+                            titleImg.src = testPath;
+                            titleImg.style.display = 'inline';
+                            titleImg.style.visibility = 'visible';
+                        };
+                        testImg.onerror = () => {
+                            console.log(`❌ 載入失敗: ${testPath}`);
+                            pathIndex++;
+                            tryNextPath();
+                        };
+                        testImg.src = testPath;
+                    } else {
+                        console.log('❌ 所有路徑都無法載入 taichung.gif，隱藏圖片');
+                        titleImg.style.display = 'none';
+                    }
+                }
+                
+                // 先隱藏圖片，避免顯示錯誤圖示
+                titleImg.style.visibility = 'hidden';
+                tryNextPath();
+            }
+        }
+
+        // 程式進入點
+        fixImagePaths(); // 先修正圖片路徑
+        init();
+        console.log('🚀 3D 景點地圖初始化完成');
+    </script>
+</body>
+</html>

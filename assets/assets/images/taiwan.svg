@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="16" viewBox="0 0 24 16">
+  <!-- 台湾旗帜简化版 -->
+  <rect width="24" height="16" fill="#fe0000"/>
+  <rect width="12" height="8" fill="#000095"/>
+  <circle cx="6" cy="4" r="2.5" fill="#fff"/>
+  <circle cx="6" cy="4" r="2" fill="#000095"/>
+  <!-- 太阳光芒 -->
+  <g fill="#fff" stroke="#fff" stroke-width="0.2">
+    <path d="M6 1.5 L6 2.5 M6 5.5 L6 6.5 M8.5 4 L7.5 4 M4.5 4 L3.5 4"/>
+    <path d="M7.8 2.2 L7.2 2.8 M4.8 5.2 L4.2 5.8 M7.8 5.8 L7.2 5.2 M4.8 2.8 L4.2 2.2"/>
+  </g>
+</svg>

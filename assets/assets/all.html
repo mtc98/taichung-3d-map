@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>台中景點 3D 地圖</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background-color: #fff9e6;
+        }
+
+        #標題 {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgb(34, 34, 150);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 22px;
+            text-align: center;
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        #標題:hover {
+            background-color: rgb(49, 49, 180);
+        }
+
+        #地圖容器 {
+            height: 100vh;
+            width: 100vw;
+            border-radius: 10px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        #左側面板 {
+            position: fixed;
+            top: 90px;
+            left: 30px;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            padding: 12px 10px 10px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #右側控制 {
+            position: fixed;
+            top: 20px;
+            right: 30px;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            padding: 10px 10px 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 200px;
+        }
+
+        /* 左下角：2D 用 YouBike 面板 */
+        #youbikePanel2D {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            padding: 10px 10px 8px 10px;
+            display: none; /* 預設隱藏，2D 顯示 */
+            flex-direction: column;
+            gap: 6px;
+            min-width: 220px;
+            max-width: 300px;
+        }
+
+        /* 2D 左下角面板切換按鈕（顯示/隱藏 Ubike 面板） */
+        #youbikeToggleBtn {
+            position: fixed;
+            bottom: 70px;
+            left: 20px; /* 與面板錯開，避免遮蓋 */
+            z-index: 25;
+            width: 44px;
+            height: 44px;
+            background: #EEE8AA; /* 淡黃金 */
+            color: #5a4a00;
+        }
+        #youbikeToggleBtn:hover { background: #e99051; }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            color: #222;
+        }
+
+        .control-group input[type="range"] {
+            width: 200px;
+        }
+
+        .景點按鈕 {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: #e3eaff;
+            color: #222296;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .景點按鈕:hover {
+            background: #b6c8ff;
+        }
+
+        #相機資訊 {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            width: 100vw;
+            font-size: 15px;
+            z-index: 30;
+            box-sizing: border-box;
+            max-height: 40vh;
+            overflow-y: auto;
+            border-top: 2px solid rgba(34, 34, 150, 0.3);
+            transition: transform 0.3s ease;
+        }
+        
+        #相機資訊.隱藏 {
+            transform: translateY(100%);
+        }
+
+        #相機參數顯示 {
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        /* 摺疊按鈕 */
+        #toggleDebugBtn {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            z-index: 35;
+            background: rgba(34, 34, 150, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+            cursor: pointer;
+            display: none; /* 預設隱藏，只在有定位資料時顯示 */
+        }
+        
+        #toggleDebugBtn:hover {
+            background: rgba(49, 49, 180, 1);
+        }
+        
+        #偵錯資訊區塊 {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        #偵錯標題 {
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #偵錯標題:hover {
+            color: #222296;
+        }
+
+        #偵錯內容 {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.04);
+            padding: 6px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+
+        .偵錯摺疊 {
+            max-height: 0 !important;
+            padding: 0 6px !important;
+            opacity: 0;
+        }
+
+        /* 面板切換按鈕樣式 */
+        .面板切換按鈕 {
+            position: fixed;
+            z-index: 25;
+            background: rgba(34, 34, 150, 0.95);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 3px 9px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .面板切換按鈕:hover {
+            background: rgb(49, 180, 224);
+            transform: scale(1.1);
+        }
+
+        /* 右側按鈕：淡黃金底色與對應 hover 效果 */
+        #右側切換,
+        #mapToggleBtn,
+        #locationBtn {
+            background: #EEE8AA; /* palegoldenrod 淡黃金 */
+            color: #5a4a00;
+        }
+        #右側切換:hover,
+        #mapToggleBtn:hover,
+        #locationBtn:hover {
+            background: #edba7f; /* 稍微加深的淡黃金 */
+        }
+
+        /* 右側面板中的功能按鈕使用淡黃金底色，不影響左側面板按鈕 */
+        #右側控制 .景點按鈕 {
+            background: #F7E7A1;
+            color: #5a4a00;
+        }
+        #右側控制 .景點按鈕:hover {
+            background: #E9D784;
+        }
+
+        #leftPanelToggle {
+            top: 70px;
+            left: 15px;
+        }
+        #rightPanelToggle {
+            top: 70px;
+            right: 15px;
+        }
+
+        /* 面板隱藏狀態 */
+        .面板隱藏 {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* 面板過渡動畫 */
+        #左側面板, #右側控制, #youbikePanel2D {
+            transition: all 0.3s ease;
+        }
+
+        .youbike面板隱藏 {
+            transform: translateY(110%) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="leftPanelToggle" class="面板切換按鈕" title="切換景點面板" aria-label="切換景點面板" role="button">🗺️</button>
+    <button id="rightPanelToggle" class="面板切換按鈕" title="切換視角控制" aria-label="切換視角控制" role="button">⚙️</button>
+    <div id="標題">台中景點</div>
+    <!-- 移除浮動切換按鈕，在 Flutter 中不需要 ? -->
+    <div id="左側面板"></div>
+    <div id="地圖容器" style="height:100vh;width:100vw;"></div>
+    <div id="右側控制"></div>
+    <div id="youbikePanel2D"></div>
+    <button id="mapToggleBtn" class="面板切換按鈕" style="position: fixed; bottom: 80px; right: 70px;" title="切換地圖模式" aria-label="切換地圖模式" role="button">🧊</button>
+    <button id="locationBtn" class="面板切換按鈕" style="position: fixed; bottom: 140px; right: 70px; display: none;" title="移動到目前位置" aria-label="移動到目前位置" role="button">🔘</button>
+    <button id="youbikeToggleBtn" class="面板切換按鈕" style="position: fixed; bottom: 80px; right: 20px;" title="顯示/隱藏 YouBike 面板" aria-label="顯示/隱藏 YouBike 面板" role="button">🚲</button>
+    <button id="toggleDebugBtn" title="顯示/隱藏定位資訊" aria-label="顯示/隱藏定位資訊" role="button">📍</button>
+    <div id="相機資訊" class="隱藏">
+        <div id="相機參數顯示" style="display: none;"><!-- 暫時隱藏相機參數 --></div>
+        <div id="偵錯資訊區塊">
+            <div id="偵錯標題">定位資訊 (點擊展開/摺疊)</div>
+            <div id="偵錯內容">等待定位中...</div>
+        </div>
+    </div>
+    <script async defer>
+        console.log('🚀 開始載入 Google Maps API...');
+        console.log('📍 當前網域:', window.location.href);
+        
+        (g => { var h, a, k, p = "The Google Maps JavaScript API", c = "google", l = "importLibrary", q = "__ib__", m = document, b = window; b = b[c] || (b[c] = {}); var d = b.maps || (b.maps = {}), r = new Set, e = new URLSearchParams, u = () => h || (h = new Promise(async (f, n) => { await (a = m.createElement("script")); e.set("libraries", [...r] + ""); for (k in g) e.set(k.replace(/[A-Z]/g, t => "_" + t[0].toLowerCase()), g[k]); e.set("callback", c + ".maps." + q); a.src = `https://maps.${c}apis.com/maps/api/js?` + e; console.log('📡 載入 Maps API URL:', a.src); d[q] = f; a.onerror = (err) => { console.error('❌ Google Maps API 載入失敗:', err); h = n(Error(p + " could not load.")); }; a.onload = () => { console.log('✅ Google Maps API 腳本載入成功'); }; a.nonce = m.querySelector("script[nonce]")?.nonce || ""; m.head.append(a) })); d[l] ? console.warn(p + " only loads once. Ignoring:", g) : d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n)) })({
+            key: "AIzaSyDhFmyyK0ipeOreWD1D7Ry4wEE53EudGdA",
+            v: "beta",
+        });
+        
+        // 監聽 Google Maps API 載入完成
+        window.addEventListener('load', () => {
+            console.log('📄 頁面載入完成');
+            if (window.google && window.google.maps) {
+                console.log('✅ Google Maps API 已可用');
+            } else {
+                console.log('❌ Google Maps API 不可用');
+            }
+        });
+    </script>
+    <script>
+        // --- 全域變數 ---
+        const taichungSpots = [
+            { name: "台中市政府", pos: { lat: 24.163261, lng: 120.647601, altitude: 200 }, camera: { center: { lat: 24.163261, lng: 120.647601, altitude: 500 }, range: 5000, tilt: 45, heading: 0 } },
+            { name: "國立自然科學博物館", pos: { lat: 24.157936, lng: 120.665982, altitude: 100 }, camera: { center: { lat: 24.157936, lng: 120.665982, altitude: 300 }, range: 3000, tilt: 45, heading: 0 } },
+            { name: "台中公園", pos: { lat: 24.144592, lng: 120.683923, altitude: 80 }, camera: { center: { lat: 24.144592, lng: 120.683923, altitude: 200 }, range: 2500, tilt: 45, heading: 0 } },
+            { name: "彩虹眷村", pos: { lat: 24.133976, lng: 120.610913, altitude: 80 }, camera: { center: { lat: 24.133976, lng: 120.610913, altitude: 200 }, range: 2500, tilt: 45, heading: 0 } },
+            { name: "秋紅谷廣場", pos: { lat: 24.167921, lng: 120.639110, altitude: 80 }, camera: { center: { lat: 24.167921, lng: 120.639110, altitude: 200 }, range: 2500, tilt: 45, heading: 0 } },
+            { name: "高美濕地", pos: { lat: 24.305556, lng: 120.561667, altitude: 50 }, camera: { center: { lat: 24.305556, lng: 120.561667, altitude: 150 }, range: 4000, tilt: 45, heading: 0 } },
+            { name: "東海大學路思義教堂", pos: { lat: 24.179055, lng: 120.600997, altitude: 80 }, camera: { center: { lat: 24.179055, lng: 120.600997, altitude: 200 }, range: 2500, tilt: 45, heading: 0 } },
+            { name: "一中街商圈", pos: { lat: 24.147736, lng: 120.684436, altitude: 80 }, camera: { center: { lat: 24.147736, lng: 120.684436, altitude: 200 }, range: 2500, tilt: 45, heading: 0 } }
+        ];
+        let map3D, map2D, initialCamera;
+        let is3D = true;
+        let heightPercent = 50, tiltDegrees = 45;
+        let isLeftPanelOpen = false, isRightPanelOpen = false;
+        let youbikeStationsCache = null, currentUserPosition = null;
+        let userLocationMarker = null;  // 新增：使用者位置標記
+        let flutterLocationData = null; // 儲存 Flutter 傳來的位置
+        let userHasClosedDebugPanel = false; // 記錄使用者是否手動關閉了面板
+        let lastLocationUpdateTime = 0; // 記錄上次位置更新時間
+        let lastSignificantPosition = null; // 記錄上次重要位置變更
+        const LOCATION_UPDATE_INTERVAL = 35000; // 🔧 優化：縮短到15秒
+        const SIGNIFICANT_MOVE_DISTANCE = 50; // 🔧 新增：50公尺內視為無顯著移動
+        const map2DMarkers = new Map();
+        let filterRadiusMeters2D = 2000;
+        let markerSizePx2D = 48;
+        let showYouBikeMarkers2D = true;
+        let hideMapIcons2D = true;
+        let infoWindow2D = null;
+
+        const MAP_STYLES_HIDE_ICONS = [
+            { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+            { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+            { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] }
+        ];
+
+        // --- Flutter 位置接收函數 ---
+        window.receiveFlutterLocation = function(locationData) {
+            console.log('✅ 收到 Flutter 位置資料:', locationData);
+            
+            // 🔧 優化：檢查是否需要更新（時間節流 + 距離判斷）
+            const currentTime = Date.now();
+            const timeSinceLastUpdate = currentTime - lastLocationUpdateTime;
+            
+            // 計算距離變化
+            let distanceChanged = Infinity;
+            if (lastSignificantPosition) {
+                distanceChanged = haversineMeters(
+                    lastSignificantPosition.lat, lastSignificantPosition.lng,
+                    locationData.lat, locationData.lng
+                );
+            }
+            
+            // 判斷是否需要更新：時間間隔 OR 顯著移動
+            const shouldUpdate = timeSinceLastUpdate >= LOCATION_UPDATE_INTERVAL || 
+                               distanceChanged >= SIGNIFICANT_MOVE_DISTANCE;
+            
+            if (!shouldUpdate) {
+                console.log(`⏱️ 跳過更新 - 距離: ${distanceChanged.toFixed(0)}m, 時間: ${Math.round(timeSinceLastUpdate/1000)}s`);
+                return;
+            }
+            
+            console.log(`🔄 執行位置更新 - 距離變化: ${distanceChanged.toFixed(0)}m, 時間間隔: ${Math.round(timeSinceLastUpdate/1000)}s`);
+            lastLocationUpdateTime = currentTime;
+            lastSignificantPosition = { lat: locationData.lat, lng: locationData.lng };
+            
+            flutterLocationData = locationData;
+            
+            // 更新目前位置
+            currentUserPosition = {
+                lat: locationData.lat,
+                lng: locationData.lng
+            };
+            
+            // 顯示 debug 訊息
+            const debugDiv = document.getElementById('偵錯內容');
+            if (debugDiv) {
+                const now = new Date();
+                debugDiv.innerHTML = `
+                    <strong>Flutter 定位資料 (${now.toLocaleTimeString()}):</strong><br>
+                    緯度: ${locationData.lat.toFixed(6)}<br>
+                    經度: ${locationData.lng.toFixed(6)}<br>
+                    精確度: ${locationData.accuracy.toFixed(1)} 公尺<br>
+                    移動距離: ${distanceChanged.toFixed(0)} 公尺<br>
+                    狀態: ✅ 定位成功<br>
+                    <small style="color: #666;">智能更新 (時間${LOCATION_UPDATE_INTERVAL/1000}s / 距離${SIGNIFICANT_MOVE_DISTANCE}m)</small>
+                `;
+                document.getElementById('偵錯資訊區塊').style.display = 'block';
+                document.getElementById('偵錯標題').textContent = '定位資訊 (點擊展開/摺疊)';
+                
+                // 顯示摺疊按鈕
+                document.getElementById('toggleDebugBtn').style.display = 'block';
+                
+                // 只在 2D 模式且使用者沒有手動關閉時才自動顯示
+                if (!is3D && !userHasClosedDebugPanel) {
+                    document.getElementById('相機資訊').classList.remove('隱藏');
+                }
+            }
+            
+            // 如果在 2D 模式，更新地圖標記
+            if (!is3D && map2D) {
+                updateUserLocationMarker(locationData);
+            }
+        };
+        
+        // 更新使用者位置標記
+        function updateUserLocationMarker(locationData) {
+            if (!map2D) {
+                console.log('❌ map2D 不存在，無法創建標記');
+                return;
+            }
+            
+            console.log('📍 開始更新用戶位置標記:', locationData);
+            
+            const position = { lat: locationData.lat, lng: locationData.lng };
+            
+            // 如果標記已存在，更新位置
+            if (userLocationMarker) {
+                console.log('🔄 更新現有標記位置');
+                userLocationMarker.setPosition(position);
+            } else {
+                console.log('🆕 創建新的位置標記');
+                
+                // 創建新的標記 - 使用醒目的藍色圓點
+                userLocationMarker = new google.maps.Marker({
+                    position: position,
+                    map: map2D,
+                    title: '您的位置',
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 15, // 增大尺寸以提高可見度
+                        fillColor: '#4285F4', // Google 藍
+                        fillOpacity: 1,
+                        strokeColor: '#FFFFFF',
+                        strokeWeight: 4 // 增加白色邊框寬度
+                    },
+                    zIndex: 999, // 確保在最上層顯示
+                    optimized: false // 防止被優化隱藏
+                });
+                
+                // 添加脈動效果的外圈
+                const pulseMarker = new google.maps.Marker({
+                    position: position,
+                    map: map2D,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 25,
+                        fillColor: '#4285F4',
+                        fillOpacity: 0.3,
+                        strokeColor: '#4285F4',
+                        strokeWeight: 1
+                    },
+                    zIndex: 998
+                });
+                
+                console.log('✅ 位置標記已創建:', userLocationMarker);
+                
+                // 添加點擊事件顯示訊息
+                userLocationMarker.addListener('click', () => {
+                    console.log('🔍 位置標記被點擊');
+                    const info = new google.maps.InfoWindow({
+                        content: `
+                            <div style="padding: 10px;">
+                                <h3>您的位置</h3>
+                                <p>緯度: ${locationData.lat.toFixed(6)}</p>
+                                <p>經度: ${locationData.lng.toFixed(6)}</p>
+                                <p>精確度: ${locationData.accuracy.toFixed(1)} 公尺</p>
+                                <p style="color: #666; font-size: 12px;">資料來源: Flutter Geolocator</p>
+                            </div>
+                        `
+                    });
+                    info.open(map2D, userLocationMarker);
+                });
+            }
+            
+            // 移動地圖到目前位置
+            map2D.panTo(position);
+            
+            // 顯示提示訊息
+            console.log('📍 地圖已移動到您的位置:', position);
+        }
+
+        // --- 輔助函式 ---
+        function haversineMeters(lat1, lng1, lat2, lng2) {
+            const R = 6371000;
+            const toRad = (d) => d * Math.PI / 180;
+            const dLat = toRad(lat2 - lat1);
+            const dLng = toRad(lng2 - lng1);
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function calculateDistanceAndTime(station) {
+            // 取得目前位置（優先使用 Flutter 位置，其次是地圖中心）
+            let currentPos = null;
+            
+            // 優先使用 Flutter 提供的位置
+            if (flutterLocationData) {
+                currentPos = { lat: flutterLocationData.lat, lng: flutterLocationData.lng };
+            }
+            // 如果有用戶位置標記，使用該位置
+            else if (userLocationMarker) {
+                const pos = userLocationMarker.getPosition();
+                if (pos) {
+                    currentPos = { lat: pos.lat(), lng: pos.lng() };
+                }
+            }
+            // 最後使用地圖中心位置
+            else if (map2D) {
+                const center = map2D.getCenter();
+                if (center) {
+                    currentPos = { lat: center.lat(), lng: center.lng() };
+                }
+            }
+            
+            if (!currentPos) {
+                return '<div style="font-size:12px;color:#666;margin-bottom:6px;">📍 無法取得目前位置</div>';
+            }
+            
+            // 計算直線距離（公尺）
+            const distance = haversineMeters(currentPos.lat, currentPos.lng, station.lat, station.lng);
+            
+            // 格式化距離
+            let distanceText;
+            if (distance < 1000) {
+                distanceText = `${Math.round(distance)} 公尺`;
+            } else {
+                distanceText = `${(distance / 1000).toFixed(1)} 公里`;
+            }
+            
+            // 估算時間（步行速度 5 km/h，騎車速度 15 km/h）
+            const walkingTimeMinutes = Math.round((distance / 1000) / 5 * 60);
+            const cyclingTimeMinutes = Math.round((distance / 1000) / 15 * 60);
+            
+            let walkingTimeText, cyclingTimeText;
+            
+            if (walkingTimeMinutes < 60) {
+                walkingTimeText = `${walkingTimeMinutes} 分鐘`;
+            } else {
+                const hours = Math.floor(walkingTimeMinutes / 60);
+                const minutes = walkingTimeMinutes % 60;
+                walkingTimeText = `${hours} 小時 ${minutes} 分鐘`;
+            }
+            
+            if (cyclingTimeMinutes < 60) {
+                cyclingTimeText = `${cyclingTimeMinutes} 分鐘`;
+            } else {
+                const hours = Math.floor(cyclingTimeMinutes / 60);
+                const minutes = cyclingTimeMinutes % 60;
+                cyclingTimeText = `${hours} 小時 ${minutes} 分鐘`;
+            }
+            
+            return `
+<div style="font-size:12px;color:#666;margin-bottom:6px;padding:4px;background:#f5f5f5;border-radius:4px;">
+  <div>📍 距離：${distanceText}</div>
+  <div>🚶 步行約：${walkingTimeText}</div>
+  <div>🚴 騎車約：${cyclingTimeText}</div>
+</div>`;
+        }
+
+        function cleanStationName(rawName) {
+            return String(rawName || '').replace(/^YouBike2\.0[_\s-]*/i, '');
+        }
+
+        // --- 資料擷取 ---
+        async function loadYouBikeDataNormalized() {
+            try {
+                const apiUrl = 'https://datacenter.taichung.gov.tw/swagger/OpenData/bc27c2f7-6ed7-4f1a-b3cc-1a3cc9cda34e';
+                const resp = await fetch(apiUrl, { cache: 'no-store' });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const rawData = await resp.json();
+                const stations = Array.isArray(rawData.retVal) ? rawData.retVal : (Array.isArray(rawData) ? rawData : []);
+                const normalized = stations.map((s, i) => ({
+                    id: String(s.sno || i), name: cleanStationName(s.sna), area: String(s.sarea || ''),
+                    address: String(s.ar || ''), lat: Number(s.lat), lng: Number(s.lng),
+                    totalSlots: Number(s.tot || 0), bikes: Number(s.sbi || 0), docks: Number(s.bemp || 0),
+                    isActive: s.act == 1, yb2Bikes: Number(s.sbi_detail?.yb2 || 0),
+                    electricBikes: Number(s.sbi_detail?.eyb || 0), lastUpdate: s.mday || ''
+                })).filter(s => s.isActive && Number.isFinite(s.lat) && Number.isFinite(s.lng));
+                console.info(`[YouBike] 成功從 API 載入 ${normalized.length} 個站點。`);
+                return normalized;
+            } catch (err) {
+                console.error('[YouBike] API 載入失敗：', err);
+                return [];
+            }
+        }
+
+        // --- 核心功能 ---
+        async function init() {
+            try {
+                console.log('🔄 開始初始化應用程式...');
+                
+                // 檢查 Google Maps API 是否已載入
+                if (!window.google || !window.google.maps) {
+                    console.log('⏳ 等待 Google Maps API 載入...');
+                    // 等待 API 載入
+                    await new Promise((resolve, reject) => {
+                        const checkInterval = setInterval(() => {
+                            if (window.google && window.google.maps) {
+                                console.log('✅ Google Maps API 已載入');
+                                clearInterval(checkInterval);
+                                resolve();
+                            }
+                        }, 100);
+                        
+                        // 30秒超時
+                        setTimeout(() => {
+                            clearInterval(checkInterval);
+                            reject(new Error('Google Maps API 載入超時'));
+                        }, 30000);
+                    });
+                }
+                
+                await show3DMap(); // 預設顯示 3D 地圖
+                setupEventListeners();
+                
+                console.log('✅ 應用程式初始化完成');
+                
+            } catch (error) {
+                console.error('❌ 初始化失敗:', error);
+                
+                // 顯示錯誤訊息給用戶
+                const container = document.getElementById('地圖容器');
+                container.innerHTML = `
+                    <div style="display: flex; justify-content: center; align-items: center; height: 100%; background: #f5f5f5;">
+                        <div style="text-align: center; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                            <h3 style="color: #d32f2f; margin-bottom: 10px;">❌ 地圖載入失敗</h3>
+                            <p style="color: #666; margin-bottom: 15px;">Google Maps API 無法載入</p>
+                            <button onclick="location.reload()" style="background: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                                🔄 重新載入
+                            </button>
+                            <div style="margin-top: 15px; font-size: 12px; color: #999;">
+                                錯誤詳情: ${error.message}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 🔧 優化：使用事件驅動替代定時檢查
+            if (typeof window !== 'undefined') {
+                // 不再使用 setInterval，改為事件驅動模式
+                console.log('✅ 設定事件驅動位置更新模式');
+                
+                // 如果需要 Web 平台支援，可以監聽 storage 事件
+                window.addEventListener('storage', (e) => {
+                    if (e.key === 'flutterLocation' && e.newValue) {
+                        try {
+                            const data = JSON.parse(e.newValue);
+                            if (data && data.lat && data.lng && !is3D && map2D) {
+                                currentUserPosition = { lat: data.lat, lng: data.lng };
+                                updateUserLocationMarker(data);
+                                localStorage.removeItem('flutterLocation'); // 清除避免重複
+                            }
+                        } catch (error) {
+                            console.warn('位置資料解析失敗:', error);
+                        }
+                    }
+                });
+            }
+        }
+
+        function setupEventListeners() {
+            // 定位資訊面板切換
+            document.getElementById('toggleDebugBtn').onclick = () => {
+                const panel = document.getElementById('相機資訊');
+                const wasHidden = panel.classList.contains('隱藏');
+                panel.classList.toggle('隱藏');
+                const btn = document.getElementById('toggleDebugBtn');
+                btn.textContent = panel.classList.contains('隱藏') ? '📍' : '❌';
+                
+                // 記錄使用者的選擇
+                if (wasHidden) {
+                    // 使用者主動開啟
+                    userHasClosedDebugPanel = false;
+                } else {
+                    // 使用者主動關閉
+                    userHasClosedDebugPanel = true;
+                }
+            };
+            
+            document.getElementById('leftPanelToggle').onclick = () => togglePanel('left');
+            document.getElementById('rightPanelToggle').onclick = () => togglePanel('right');
+            document.getElementById('mapToggleBtn').onclick = async () => {
+                is3D = !is3D;
+                if (is3D) await show3DMap(); else await show2DMap();
+            };
+            
+            // 標題點擊重置功能
+            const titleElement = document.getElementById('標題');
+            titleElement.style.cursor = 'pointer';
+            titleElement.title = '點擊回到最初視角';
+            titleElement.onclick = () => {
+                if (is3D) {
+                    resetToInitial();
+                }
+            };
+            
+            // 點擊面板外部時，關閉面板
+            document.getElementById('地圖容器').addEventListener('click', () => {
+                if(isLeftPanelOpen) togglePanel('left', false);
+                if(isRightPanelOpen) togglePanel('right', false);
+            });
+        }
+
+        async function show3DMap() {
+            const { Map3DElement, MapMode, Marker3DInteractiveElement } = await google.maps.importLibrary("maps3d");
+            const container = document.getElementById('地圖容器');
+            container.innerHTML = '';
+            map3D = new Map3DElement({ center: { lat: 24.147736, lng: 120.673648, altitude: 2000 }, range: 30000, tilt: 30, mode: MapMode.HYBRID });
+            container.append(map3D);
+
+            if (!initialCamera) {
+                initialCamera = {
+                    center: {
+                        lat: 24.147736,
+                        lng: 120.673648,
+                        altitude: 2000
+                    },
+                    range: 30000,
+                    tilt: 30,
+                    heading: 0
+                };
+            }
+            
+            taichungSpots.forEach(spot => {
+                const marker = new Marker3DInteractiveElement({ position: spot.pos, label: spot.name, altitudeMode: "ABSOLUTE", extruded: true });
+                marker.addEventListener("gmp-click", () => flyToAndRotate(spot));
+                map3D.append(marker);
+            });
+
+            build3DControlPanel();
+            build3DSpotPanel();
+            
+            // 初始時隱藏 3D 面板
+            document.getElementById('左側面板').classList.add('面板隱藏');
+            document.getElementById('右側控制').classList.add('面板隱藏');
+            // 更新按鈕圖示為關閉狀態
+            document.getElementById('leftPanelToggle').textContent = '🗺️';
+            document.getElementById('rightPanelToggle').textContent = '⚙️';
+            
+            // 清理 2D 地圖的標記
+            if (userLocationMarker) {
+                userLocationMarker.setMap(null);
+                userLocationMarker = null;
+            }
+            
+            // 關閉 2D 的 YouBike 面板
+            document.getElementById('youbikePanel2D').style.display = 'none';
+            document.getElementById('youbikePanel2D').classList.add('youbike面板隱藏');
+            
+            // 顯示標題
+            document.getElementById('標題').style.display = 'block';
+            
+            // 3D 模式時隱藏定位資訊面板
+            document.getElementById('相機資訊').classList.add('隱藏');
+            
+            updateButtonVisibility();
+        }
+
+        async function show2DMap() {
+            await google.maps.importLibrary('maps');
+            const container = document.getElementById('地圖容器');
+            container.innerHTML = '';
+            map2D = new google.maps.Map(container, { 
+                center: { lat: 24.147736, lng: 120.673648 }, 
+                zoom: 13, 
+                mapTypeId: 'roadmap',
+                // 禁用默认控件
+                zoomControl: false,           // 禁用缩放按钮
+                mapTypeControl: false,        // 禁用地图类型切换
+                scaleControl: false,          // 禁用比例尺
+                streetViewControl: false,     // 禁用街景控件（黄色人型图标）
+                rotateControl: false,         // 禁用旋转控件
+                fullscreenControl: false,     // 禁用全屏控件
+                gestureHandling: 'greedy'     // 优化触摸手势
+            });
+            infoWindow2D = new google.maps.InfoWindow();
+
+            if (hideMapIcons2D) map2D.setOptions({ styles: MAP_STYLES_HIDE_ICONS });
+
+            // 在 2D 模式下，隱藏 3D 的面板
+            document.getElementById('左側面板').classList.add('面板隱藏');
+            document.getElementById('右側控制').classList.add('面板隱藏');
+            // 隱藏標題
+            document.getElementById('標題').style.display = 'none';
+            
+            // 2D 模式時，重置使用者關閉狀態（讓面板可以自動顯示一次）
+            // 但如果使用者已經主動關閉，就保持關閉
+            if (!userHasClosedDebugPanel && flutterLocationData) {
+                document.getElementById('相機資訊').classList.remove('隱藏');
+            }
+
+            buildYouBike2DPanel();
+            setupLocationButton(); // 初始化定位按钮
+            updateButtonVisibility();
+
+            // 優先使用 Flutter 位置，否則使用瀏覽器定位
+            const useCenterAndRender = async (center) => {
+                map2D.setCenter(center);
+                map2D.setZoom(16);  // 放大到更詳細的級別
+                if (!youbikeStationsCache) youbikeStationsCache = await loadYouBikeDataNormalized();
+                render2DYouBikeMarkers(center);
+            };
+            
+            // 如果已有 Flutter 位置資料，優先使用
+            if (flutterLocationData) {
+                console.log('使用 Flutter 位置資料');
+                currentUserPosition = { lat: flutterLocationData.lat, lng: flutterLocationData.lng };
+                updateUserLocationMarker(flutterLocationData);
+                useCenterAndRender(currentUserPosition);
+            } else if (navigator.geolocation) {
+                // Web 平台：使用瀏覽器定位 API
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => { 
+                        console.log('瀏覽器定位成功:', pos.coords);
+                        currentUserPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                        
+                        // 創建藍色定位標記
+                        const locationData = {
+                            lat: pos.coords.latitude,
+                            lng: pos.coords.longitude,
+                            accuracy: pos.coords.accuracy
+                        };
+                        updateUserLocationMarker(locationData);
+                        useCenterAndRender(currentUserPosition);
+                    },
+                    (error) => {
+                        console.log('瀏覽器定位失敗:', error);
+                        useCenterAndRender({ lat: 24.147736, lng: 120.673648 });
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
+                );
+            } else {
+                useCenterAndRender({ lat: 24.147736, lng: 120.673648 });
+            }
+
+            map2D.addListener('idle', () => render2DYouBikeMarkers(map2D.getCenter().toJSON()));
+        }
+
+        function updateButtonVisibility() {
+            document.getElementById('leftPanelToggle').style.display = is3D ? 'block' : 'none';
+            document.getElementById('rightPanelToggle').style.display = is3D ? 'block' : 'none';
+            document.getElementById('youbikeToggleBtn').style.display = is3D ? 'none' : 'block';
+            document.getElementById('locationBtn').style.display = is3D ? 'none' : 'block'; // 定位按钮只在2D模式显示
+            document.getElementById('mapToggleBtn').textContent = is3D ? '🧊' : '🗺️';
+        }
+
+        // --- 3D 功能 ---
+        function flyToAndRotate(spot) {
+            const closeupCamera = { center: spot.pos, range: Math.max(spot.camera.range * 0.45, 600) * (heightPercent / 100), tilt: tiltDegrees, heading: map3D.heading };
+            map3D.flyCameraTo({ endCamera: closeupCamera, durationMillis: 2000 });
+            map3D.addEventListener('gmp-animationend', () => map3D.flyCameraAround({ camera: closeupCamera, durationMillis: 4000, rounds: 1 }), { once: true });
+        }
+
+        function resetToInitial() {
+            console.log('重置視角被點擊');
+            if (!map3D) {
+                console.log('map3D 不存在');
+                return;
+            }
+            heightPercent = 50;  // 重置為預設值
+            tiltDegrees = 30;    // 重置為預設值
+            
+            const resetCamera = {
+                center: {
+                    lat: 24.147736,
+                    lng: 120.673648,
+                    altitude: 2000
+                },
+                range: 30000,
+                tilt: 30,
+                heading: 0
+            };
+            
+            console.log('正在重置到初始視角', resetCamera);
+            map3D.flyCameraTo({ endCamera: resetCamera, durationMillis: 1200 });
+            build3DControlPanel(); // 重建以更新滑桿顯示
+        }
+
+        function build3DSpotPanel() {
+            const panel = document.getElementById('左側面板');
+            panel.innerHTML = '';
+            taichungSpots.forEach(spot => {
+                const btn = document.createElement('button');
+                btn.className = '景點按鈕';
+                btn.textContent = spot.name;
+                btn.onclick = () => {
+                    // 點擊景點時，執行飛行並關閉面板
+                    flyToAndRotate(spot);
+                    if (isLeftPanelOpen) {
+                        togglePanel('left', false);
+                    }
+                };
+                panel.appendChild(btn);
+            });
+        }
+
+        function build3DControlPanel() {
+            const controls = document.getElementById('右側控制');
+            controls.innerHTML = '';
+            const title = document.createElement('div');
+            title.style.cssText = 'font-weight:bold; font-family:Arial,sans-serif;';
+            title.textContent = '視角控制';
+            controls.appendChild(title);
+
+            [
+                { label: '仰角', value: tiltDegrees, min: 20, max: 90, step: 5, oninput: (v) => {
+                    tiltDegrees = v;
+                    if (map3D) {
+                        const currentCamera = {
+                            center: map3D.center,
+                            range: map3D.range,
+                            tilt: tiltDegrees,
+                            heading: map3D.heading
+                        };
+                        map3D.flyCameraTo({ endCamera: currentCamera, durationMillis: 300 });
+                    }
+                }},
+                { label: '高度', value: heightPercent, min: 20, max: 120, step: 10, oninput: (v) => {
+                    heightPercent = v;
+                    if (map3D) {
+                        const currentCamera = {
+                            center: map3D.center,
+                            range: map3D.range * (heightPercent / 100),
+                            tilt: map3D.tilt,
+                            heading: map3D.heading
+                        };
+                        map3D.flyCameraTo({ endCamera: currentCamera, durationMillis: 300 });
+                    }
+                }}
+            ].forEach(item => {
+                const group = document.createElement('div');
+                group.className = 'control-group';
+                const labelEl = document.createElement('label');
+                labelEl.textContent = `${item.label}：${item.value}${item.label === '仰角' ? '°' : '%'}`;
+                const inputEl = document.createElement('input');
+                Object.assign(inputEl, { type: 'range', min: item.min, max: item.max, step: item.step, value: item.value });
+                inputEl.oninput = () => {
+                    item.oninput(parseInt(inputEl.value, 10));
+                    labelEl.textContent = `${item.label}：${inputEl.value}${item.label === '仰角' ? '°' : '%'}`;
+                };
+                group.append(labelEl, inputEl);
+                controls.appendChild(group);
+            });
+
+            const resetBtn = document.createElement('button');
+            resetBtn.className = '景點按鈕';
+            resetBtn.textContent = '重置視角';
+            resetBtn.onclick = resetToInitial;
+            controls.appendChild(resetBtn);
+        }
+
+        function togglePanel(side, forceState) {
+            const isOpen = side === 'left' ? isLeftPanelOpen : isRightPanelOpen;
+            const newState = forceState === undefined ? !isOpen : forceState;
+            const panel = document.getElementById(side === 'left' ? '左側面板' : '右側控制');
+            const toggleBtn = document.getElementById(side === 'left' ? 'leftPanelToggle' : 'rightPanelToggle');
+            
+            panel.classList.toggle('面板隱藏', !newState);
+            
+            if (side === 'left') {
+                isLeftPanelOpen = newState;
+                toggleBtn.textContent = newState ? '⬅️' : '🗺️'; // 根據狀態改變圖示
+            } else {
+                isRightPanelOpen = newState;
+                toggleBtn.textContent = newState ? '➡️' : '⚙️'; // 根據狀態改變圖示
+            }
+        }
+
+        function toggleLeftPanel() {
+            togglePanel('left');
+        }
+
+        function toggleRightPanel() {
+            togglePanel('right');
+        }
+
+        // --- 2D 功能 ---
+        function setupLocationButton() {
+            const locationBtn = document.getElementById('locationBtn');
+            if (!locationBtn) return;
+            
+            locationBtn.onclick = () => {
+                // 優先使用 Flutter 位置
+                if (flutterLocationData) {
+                    console.log('使用 Flutter 位置移動地圖');
+                    const pos = { lat: flutterLocationData.lat, lng: flutterLocationData.lng };
+                    map2D.setCenter(pos);
+                    map2D.setZoom(16);
+                    
+                    // 確保用戶位置標記存在並更新
+                    if (userLocationMarker) {
+                        userLocationMarker.setPosition(pos);
+                    } else {
+                        updateUserLocationMarker(flutterLocationData);
+                    }
+                    return;
+                }
+                
+                // 使用瀏覽器定位 API
+                if (navigator.geolocation) {
+                    locationBtn.style.opacity = '0.6'; // 顯示載入狀態
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const pos = {
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude
+                            };
+                            map2D.setCenter(pos);
+                            map2D.setZoom(16);
+                            
+                            // 創建或更新位置標記
+                            const locationData = {
+                                lat: pos.lat,
+                                lng: pos.lng,
+                                accuracy: position.coords.accuracy
+                            };
+                            updateUserLocationMarker(locationData);
+                            
+                            locationBtn.style.opacity = '1'; // 恢復正常狀態
+                            console.log('✅ 瀏覽器定位成功，已移動到目前位置');
+                        },
+                        (error) => {
+                            locationBtn.style.opacity = '1'; // 恢復正常狀態
+                            console.error('定位失敗:', error);
+                            alert('無法取得您的位置，請確認已允許位置存取權限');
+                        },
+                        { 
+                            enableHighAccuracy: true, 
+                            timeout: 10000, 
+                            maximumAge: 300000 
+                        }
+                    );
+                } else {
+                    alert('您的瀏覽器不支援定位功能');
+                }
+            };
+        }
+
+        function buildYouBike2DPanel() {
+            const panel = document.getElementById('youbikePanel2D');
+            panel.innerHTML = '';
+            panel.style.display = 'flex';
+
+            let isPanelVisible = true;
+            document.getElementById('youbikeToggleBtn').onclick = () => {
+                isPanelVisible = !isPanelVisible;
+                panel.classList.toggle('youbike面板隱藏', !isPanelVisible);
+            };
+
+            const title = document.createElement('div');
+            title.style.cssText = 'font-weight:bold; font-family:Arial,sans-serif;';
+            title.textContent = 'YouBike 2.0 單車站點';
+            panel.appendChild(title);
+
+            [
+                { label: '顯示單車圖標', type: 'checkbox', checked: showYouBikeMarkers2D, onchange: (c) => { showYouBikeMarkers2D = c; render2DYouBikeMarkers(map2D.getCenter().toJSON()); } },
+                { label: '隱藏地名圖標', type: 'checkbox', checked: hideMapIcons2D, onchange: (c) => { hideMapIcons2D = c; map2D.setOptions({ styles: c ? MAP_STYLES_HIDE_ICONS : null }); } },
+                { label: `搜尋半徑：${filterRadiusMeters2D}m`, type: 'range', min: 500, max: 5000, value: filterRadiusMeters2D, oninput: (v, el) => { filterRadiusMeters2D = v; el.textContent = `搜尋半徑：${v}m`; }, onchange: () => render2DYouBikeMarkers(map2D.getCenter().toJSON()) },
+                { label: `標記大小：${markerSizePx2D}px`, type: 'range', min: 28, max: 72, value: markerSizePx2D, oninput: (v, el) => { markerSizePx2D = v; el.textContent = `標記大小：${v}px`; }, onchange: () => render2DYouBikeMarkers(map2D.getCenter().toJSON()) }
+            ].forEach(item => {
+                const group = document.createElement('div');
+                group.className = 'control-group';
+                const labelEl = document.createElement('label');
+                labelEl.textContent = item.label;
+                const inputEl = document.createElement('input');
+                Object.assign(inputEl, { type: item.type, min: item.min, max: item.max, value: item.value, checked: item.checked });
+                inputEl.oninput = () => item.oninput?.(inputEl.type === 'checkbox' ? inputEl.checked : parseInt(inputEl.value, 10), labelEl);
+                inputEl.onchange = () => item.onchange?.(inputEl.type === 'checkbox' ? inputEl.checked : parseInt(inputEl.value, 10));
+                group.append(labelEl, inputEl);
+                panel.appendChild(group);
+            });
+        }
+
+        // 🔧 優化：增加渲染節流和重複檢查
+        let lastRenderCenter = null;
+        let isRendering = false;
+        let renderRequestId = null;
+        const MIN_RENDER_DISTANCE = 100; // 地圖中心移動100公尺以上才重新渲染
+
+        function render2DYouBikeMarkers(center) {
+            if (!Array.isArray(youbikeStationsCache) || !map2D) return;
+            if (!showYouBikeMarkers2D) { clear2DMarkers(); return; }
+
+            // 🔧 優化：檢查是否需要重新渲染
+            if (lastRenderCenter) {
+                const moveDistance = haversineMeters(
+                    lastRenderCenter.lat, lastRenderCenter.lng,
+                    center.lat, center.lng
+                );
+                if (moveDistance < MIN_RENDER_DISTANCE) {
+                    console.log(`⏱️ 跳過 YouBike 渲染 - 移動距離: ${moveDistance.toFixed(0)}m < ${MIN_RENDER_DISTANCE}m`);
+                    return;
+                }
+            }
+
+            // 🔧 優化：防止重複渲染
+            if (isRendering) {
+                console.log('⏱️ YouBike 渲染進行中，跳過此次請求');
+                return;
+            }
+
+            // 🔧 優化：取消之前的渲染請求
+            if (renderRequestId) {
+                cancelAnimationFrame(renderRequestId);
+            }
+
+            // 🔧 優化：使用 requestAnimationFrame 提升性能
+            renderRequestId = requestAnimationFrame(() => {
+                performYouBikeRender(center);
+            });
+        }
+
+        function performYouBikeRender(center) {
+            isRendering = true;
+            console.log(`🔄 YouBike 渲染開始 - 中心: ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)}`);
+
+            const startTime = performance.now();
+            const within = youbikeStationsCache.filter(st => 
+                haversineMeters(center.lat, center.lng, st.lat, st.lng) <= filterRadiusMeters2D
+            );
+
+            const toDelete = new Set(map2DMarkers.keys());
+            let updatedCount = 0;
+            let createdCount = 0;
+
+            within.forEach(st => {
+                const icon = buildBikeIcon(statusColorForStation(st), markerSizePx2D);
+                if (map2DMarkers.has(st.id)) {
+                    const mk = map2DMarkers.get(st.id);
+                    mk.setIcon(icon);
+                    mk.setPosition({ lat: st.lat, lng: st.lng });
+                    updatedCount++;
+                } else {
+                    const mk = new google.maps.Marker({ 
+                        position: { lat: st.lat, lng: st.lng }, 
+                        map: map2D, 
+                        title: `${st.name}｜借:${st.bikes} 還:${st.docks}`, 
+                        icon 
+                    });
+                    mk.addListener('click', () => {
+                        const { statusSymbol, statusText } = getStationStatus(st);
+                        
+                        // 使用新的距離和時間計算函數
+                        const distanceInfo = calculateDistanceAndTime(st);
+                        
+                        infoWindow2D.setContent(`<div style="font-family:Arial, sans-serif; min-width: 240px;">
+                          <div style="font-size:14px;color:#666;margin-bottom:4px;">站號: ${st.id}</div>
+                          <div style="font-weight:700;font-size:18px;margin-bottom:8px;color:#111;">${st.name}</div>
+                          <div style="font-size:14px;margin-bottom:8px;color:#333;">狀態: ${statusSymbol} ${statusText}</div>
+                          ${distanceInfo}
+                          <div style="font-size:14px;line-height:1.5;">
+                            <div>🚲 可借車輛：${st.bikes}</div>
+                            <div>🅿️ 可還車位：${st.docks}</div>
+                            <div>📊 總車位數：${st.totalSlots}</div>
+                            <div>⚡ 電動車：${st.electricBikes}</div>
+                          </div>
+                        </div>`);
+                        infoWindow2D.open({ map: map2D, anchor: mk, shouldFocus: false });
+                    });
+                    map2DMarkers.set(st.id, mk);
+                    createdCount++;
+                }
+                toDelete.delete(st.id);
+            });
+
+            // 批量刪除超出範圍的標記
+            let deletedCount = 0;
+            for (const id of toDelete) {
+                map2DMarkers.get(id)?.setMap(null);
+                map2DMarkers.delete(id);
+                deletedCount++;
+            }
+
+            const endTime = performance.now();
+            const renderTime = endTime - startTime;
+            
+            console.log(`✅ YouBike 渲染完成 - 用時: ${renderTime.toFixed(1)}ms, 創建: ${createdCount}, 更新: ${updatedCount}, 刪除: ${deletedCount}, 總數: ${within.length}`);
+            
+            lastRenderCenter = { lat: center.lat, lng: center.lng };
+            isRendering = false;
+            renderRequestId = null;
+        }
+
+        function clear2DMarkers() {
+            for (const mk of map2DMarkers.values()) mk.setMap(null);
+            map2DMarkers.clear();
+        }
+
+        function getStationStatus(st) {
+            if (!st.isActive) return { statusSymbol: '🔴', statusText: '維護中' };
+            if (st.bikes === 0) return { statusSymbol: '🟡', statusText: '無車可借' };
+            if (st.docks === 0) return { statusSymbol: '🟡', statusText: '無位可還' };
+            if (st.bikes <= 2 || st.docks <= 2) return { statusSymbol: '🟠', statusText: '車位不足' };
+            return { statusSymbol: '🟢', statusText: '正常運作' };
+        }
+
+        function statusColorForStation(st) {
+            const status = getStationStatus(st).statusSymbol;
+            if (status === '🔴') return '#d93025';
+            if (status === '🟡') return '#fbbc04';
+            if (status === '🟠') return '#f29900';
+            return '#34a853';
+        }
+
+        function buildBikeIcon(color, sizePx) {
+            const s = Math.max(28, Math.min(72, sizePx)); // FIX: Corrected the min/max values to match the slider
+            const stroke = '#0f172a';
+            const halo = '#ffffff';
+            const body = color; // 主色依狀態
+            const seat = '#111827';
+            const frame = '#1f2937';
+            const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns='http://www.w3.org/2000/svg' width='${s}' height='${s}' viewBox='0 0 32 32'>
+  <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+    <feDropShadow dx="1" dy="1" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.4"/>
+  </filter>
+  <!-- 外圈白暈 -->
+  <g fill='${halo}' stroke='${halo}' stroke-width='4' opacity='0.9' filter="url(#shadow)">
+    <circle cx='9' cy='22' r='7'/>
+    <circle cx='23' cy='22' r='7'/>
+  </g>
+  <!-- 車輪與輪框 -->
+  <g fill='${body}' stroke='${stroke}' stroke-width='1.8' filter="url(#shadow)">
+    <circle cx='9' cy='22' r='6'/>
+    <circle cx='23' cy='22' r='6'/>
+  </g>
+  <!-- 車架 -->
+  <g fill='none' stroke='${frame}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' filter="url(#shadow)">
+    <path d='M9 22l6-10h6l6 10' />
+    <path d='M15 12l3 7M12 16h6' />
+  </g>
+  <!-- 車座與把手 -->
+  <g fill='${seat}' stroke='${stroke}' stroke-width='1.2' filter="url(#shadow)">
+    <rect x='14.5' y='9' width='4' height='1.6' rx='0.6' />
+  </g>
+  <!-- 前燈（提升辨識度） -->
+  <circle cx='28.5' cy='14' r='1.6' fill='#fde68a' stroke='${stroke}' stroke-width='0.8' filter="url(#shadow)"/>
+</svg>`;
+            const url = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+            return {
+                url,
+                scaledSize: new google.maps.Size(s, s),
+                anchor: new google.maps.Point(s/2, s/2)
+            };
+        }
+
+        // 確保 DOM 載入完成後再初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            // DOM 已經載入完成
+            init();
+        }
+    </script>
+</body>
+
+</html>
