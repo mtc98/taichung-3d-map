@@ -89,24 +89,35 @@ else
     exit 1
 fi
 
-# 部署到 GitHub Pages
-print_status "準備 GitHub Pages 部署..."
+# 手動部署到 gh-pages 分支
+print_status "準備手動部署到 GitHub Pages..."
 
-# 使用 subtree 將 build/web 目錄的內容推送到 gh-pages 分支
-# 這個方法更乾淨且安全，不會動到目前的工作目錄
-print_status "正在將 build/web 目錄部署到 gh-pages 分支..."
-if git subtree push --prefix build/web origin gh-pages; then
-    print_success "GitHub Pages 部署成功"
+# 進入 build/web 目錄
+cd build/web
+
+# 初始化一個暫時的 Git repo，並提交所有檔案
+git init
+# 設定臨時的 git user，避免使用全域設定
+git config user.name "github-actions[bot]"
+git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+git add .
+git commit -m "Deploy: $(date '+%Y-%m-%d %H:%M:%S')"
+
+# 強制推送到遠端的 gh-pages 分支
+print_status "正在強制推送到 gh-pages 分支..."
+if git push -f "${REPO_URL}" HEAD:gh-pages; then
+    print_success "GitHub Pages 部署成功！"
 else
     print_error "GitHub Pages 部署失敗！"
-    print_warning "請確認 'build/web' 目錄存在，或嘗試手動執行以下指令："
-    print_warning "git subtree push --prefix build/web origin gh-pages"
+    cd ../.. # 確保回到專案根目錄
     exit 1
 fi
 
-# 因為未使用 checkout，所以不需要切回 main 分支
-# print_status "切回主分支..."
-# git checkout main
+# 清理：回到專案根目錄並刪除暫存的 .git
+cd ../..
+rm -rf build/web/.git
+
+print_status "部署流程完成。"
 
 # 完成提示
 echo "=================================="
