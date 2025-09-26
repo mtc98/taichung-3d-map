@@ -72,8 +72,12 @@ class _MapWebViewState extends State<MapWebView> {
 
   Future<void> _loadHtmlFromAssets() async {
     if (kIsWeb) {
-      // Web 平台: 建立資源的絕對 URL 並使用 loadRequest。
-      final assetUrl = Uri.base.resolve('assets/map1.html').toString();
+      // Web 平台: 根據建置模式決定資源路徑
+      // 在 release build 中，assets 會被包在另一層 assets 資料夾內
+      const String assetPath = kReleaseMode 
+          ? 'assets/assets/map1.html' 
+          : 'assets/map1.html';
+      final assetUrl = Uri.base.resolve(assetPath).toString();
       await controller.loadRequest(Uri.parse(assetUrl));
     } else {
       // 行動平台: loadFlutterAsset 是載入本地資源的推薦方法。
