@@ -82,7 +82,7 @@ fi
 
 # 建立 Web 版本
 print_status "建立 Flutter Web 版本..."
-if flutter build web --release; then
+if flutter build web --release --base-href /${REPO_NAME}/; then
     print_success "Web 版本建立成功"
 else
     print_error "Web 版本建立失敗！"
